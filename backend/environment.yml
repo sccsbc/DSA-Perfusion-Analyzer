@@ -1,0 +1,19 @@
+name: dsa-perfusion
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy
+  - scipy
+  - scikit-image
+  - matplotlib
+  - pandas
+  - pip
+  - pip:
+    - pydicom
+    - fastapi
+    - uvicorn
+    - python-multipart
+    - pytest
+    - pillow
