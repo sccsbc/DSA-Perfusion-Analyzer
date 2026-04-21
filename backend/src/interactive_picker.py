@@ -6,8 +6,6 @@ import json
 import sys
 from pathlib import Path
 
-import matplotlib
-matplotlib.use("TkAgg")  # 交互式后端
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -32,15 +30,29 @@ def pick_points(frame_image: np.ndarray, max_rois: int = 3):
     """
     fig, ax = plt.subplots(figsize=(10, 10))
     ax.imshow(frame_image, cmap="gray")
-    ax.set_title(
-        "请点击选点：\n第 1 个点 = AIF (红色)\n第 2-4 个点 = ROI (绿/蓝/黄)\n"
-        f"按 Enter 结束 (最多 {max_rois} 个 ROI)",
-        fontsize=12,
-    )
 
     points = []
     colors = ["red", "green", "blue", "orange"]
     labels = ["AIF", "ROI-1", "ROI-2", "ROI-3"]
+
+    def update_title():
+        selected = "\n".join(
+            f"  {labels[i]}: ({points[i][0]:.0f}, {points[i][1]:.0f})"
+            for i in range(len(points))
+        )
+        hint = (
+            f"已选 {len(points)}/4 个点"
+            if len(points) < 1 + max_rois
+            else "选点完成！按 Enter 键或关闭窗口继续"
+        )
+        ax.set_title(
+            f"请点击选点：第1个=AIF(红)，第2-4个=ROI(绿/蓝/黄)\n"
+            f"{hint}\n{selected}",
+            fontsize=11,
+        )
+        fig.canvas.draw()
+
+    update_title()
 
     def on_click(event):
         if event.inaxes != ax:
@@ -48,15 +60,22 @@ def pick_points(frame_image: np.ndarray, max_rois: int = 3):
         if len(points) >= 1 + max_rois:
             return
         x, y = event.xdata, event.ydata
+        if x is None or y is None:
+            return
         points.append((x, y))
         idx = len(points) - 1
         color = colors[idx % len(colors)]
         label = labels[idx % len(labels)]
         ax.plot(x, y, "o", color=color, markersize=12, label=label)
         ax.text(x + 10, y - 10, label, color=color, fontsize=10)
-        fig.canvas.draw()
+        update_title()
+
+    def on_key(event):
+        if event.key in ("return", "enter", "q"):
+            plt.close(fig)
 
     fig.canvas.mpl_connect("button_press_event", on_click)
+    fig.canvas.mpl_connect("key_press_event", on_key)
     plt.show()
 
     if len(points) < 2:
