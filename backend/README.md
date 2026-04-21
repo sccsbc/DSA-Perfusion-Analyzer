@@ -77,6 +77,54 @@ python src/interactive_picker.py "你的dicom文件路径.dcm" "输出目录/"
 
 ---
 
+## 反卷积参数计算方法
+
+基于指示剂稀释理论（Indicator Dilution Theory）和 SVD 反卷积。
+
+### 1. 理论基础
+
+ROI 区域的时间-密度曲线 `Cvoi(t)` 与 AIF 的 `Cart(t)` 满足卷积关系：
+
+```
+Cvoi(t) = CBF · ρvoi · (Cart * r)(t)
+```
+
+- `CBF`：脑血流量（待求）
+- `ρvoi`：ROI 区域的平均像素强度
+- `r(t)`：residue function（残留函数），max(r(t)) = 1
+- `*`：卷积运算
+
+### 2. SVD 反卷积
+
+将上式改写为矩阵形式 `A · k = Cvoi`，其中 A 是由 `Cart(t)` 构建的下三角循环矩阵。
+
+对 A 做 SVD 分解：`A = U · S · V^T`
+
+求解 flow-scaled residue function：
+
+```
+k(t) = V · diag(1/s_i) · U^T · Cvoi(t) = CBF · ρvoi · r(t)
+```
+
+**正则化**：截断小于 `0.05 · s_max` 的奇异值，抑制噪声放大。
+
+### 3. 参数计算公式
+
+```
+DSA-CBF   = max(k(t)) / ρvoi
+DSA-Tmax  = argmax{k(t)} × dt          (dt 为帧间隔时间)
+DSA-CBV   = sum(k(t)) × dt / ρvoi
+DSA-MTT   = DSA-CBV / DSA-CBF
+```
+
+### 4. 预处理步骤
+
+1. **基线校正**：TIC 减去前 3 帧的平均值
+2. **时间域高斯滤波**：sigma = 1.0，平滑降噪
+3. **非负截断**：将负值置 0，避免数值问题
+
+---
+
 ## 支持的数据格式
 
 - 单文件多帧 DICOM（`.dcm`）
