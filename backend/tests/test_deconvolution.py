@@ -38,17 +38,24 @@ def test_svd_deconvolution_basic():
     aif = np.zeros(n)
     aif[2:7] = np.array([1, 3, 5, 3, 1])
 
-    # 构造一个简单 residue function：指数衰减
-    r = np.exp(-times / 1.5)
+    # 真实参数
+    cbf_true = 0.8
+    r_true = np.exp(-times / 1.5)
+
+    # k(t) = CBF * r(t)，ρvoi = 1.0
+    k_true = cbf_true * r_true
 
     # 卷积得到 tic
-    tic = np.convolve(aif, r, mode="full")[:n]
+    tic = np.convolve(aif, k_true, mode="full")[:n]
 
     result = svd_deconvolution(aif, tic, dt=dt, sigma=0.5, regularization_lambda=0.1)
 
-    assert result["dsa_cbf"] > 0
-    assert result["dsa_mtt"] > 0
-    assert result["dsa_tmax"] >= 0
+    # 验证 CBF 在合理范围（误差 < 15%）
+    assert result["dsa_cbf"] == pytest.approx(cbf_true, rel=0.15)
+    # 验证 MTT 在合理范围
+    assert result["dsa_mtt"] == pytest.approx(1.5, rel=0.15)
+    # 验证 Tmax 接近 0（指数衰减从 t=0 开始）
+    assert result["dsa_tmax"] == pytest.approx(0.0, abs=0.5)
     assert len(result["flow_scaled_residue"]) == n
 
 
@@ -57,5 +64,5 @@ def test_svd_deconvolution_no_signal():
     aif = np.ones(10, dtype=np.float32)
     tic = np.ones(10, dtype=np.float32)
     result = svd_deconvolution(aif, tic, dt=0.33, sigma=0.5, regularization_lambda=0.1)
-    # 基线校正后信号几乎为 0，cbf 应该很小
-    assert result["dsa_cbf"] < 1e3  # 不至于爆掉
+    # 基线校正后信号几乎为 0，cbf 应该接近 0
+    assert result["dsa_cbf"] < 1.0

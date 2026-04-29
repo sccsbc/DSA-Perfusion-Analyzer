@@ -90,8 +90,9 @@ def svd_deconvolution(
     k = Vh.T @ (np.diag(s_inv) @ (U.T @ tic))
 
     # 7. 计算参数
+    # rho_voi 默认为 1.0，因为 TIC 已是区域平均像素强度（np.mean(roi)）
     if rho_voi is None:
-        rho_voi = np.mean(tic) if np.mean(tic) > 1e-6 else 1.0
+        rho_voi = 1.0
 
     cbf = float(np.max(k) / rho_voi)
     tmax_idx = int(np.argmax(k))
