@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DsaViewer from '@/components/DsaViewer.vue'
 import FrameNavigator from '@/components/FrameNavigator.vue'
@@ -19,6 +19,28 @@ const analysisStore = useAnalysisStore()
 const studyLoading = ref(false)
 const studyError = ref<string | null>(null)
 const activeTab = ref('tic')
+
+/** 当前半径滑动条：根据下一个选点类型自动切换 AIF/ROI 半径 */
+const currentRadius = computed({
+  get: () => {
+    const next = analysisStore.nextPointConfig
+    if (!next) return analysisStore.roiRadius
+    return next.id === 'aif' ? analysisStore.aifRadius : analysisStore.roiRadius
+  },
+  set: (v: number) => {
+    const next = analysisStore.nextPointConfig
+    if (!next || next.id !== 'aif') {
+      analysisStore.roiRadius = v
+    } else {
+      analysisStore.aifRadius = v
+    }
+  },
+})
+
+const radiusLabel = computed(() => {
+  const next = analysisStore.nextPointConfig
+  return next?.id === 'aif' ? 'AIF' : 'ROI'
+})
 
 // 确保 study 数据已加载（处理页面刷新 session 丢失）
 onMounted(async () => {
@@ -115,23 +137,16 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         </n-tag>
         <n-divider vertical />
         <span style="font-size: 12px; color: var(--n-text-color-3); white-space: nowrap">
-          AIF
-          <n-input-number
-            v-model:value="analysisStore.aifRadius"
-            :min="2" :max="50" :step="1"
-            size="tiny"
-            style="width: 65px"
-          />
+          {{ radiusLabel }} 半径
         </span>
-        <span style="font-size: 12px; color: var(--n-text-color-3); white-space: nowrap">
-          ROI
-          <n-input-number
-            v-model:value="analysisStore.roiRadius"
-            :min="2" :max="50" :step="1"
-            size="tiny"
-            style="width: 65px"
-          />
-        </span>
+        <n-slider
+          v-model:value="currentRadius"
+          :min="2"
+          :max="50"
+          :step="0.5"
+          :format-tooltip="(v: number) => `${radiusLabel} ${v.toFixed(1)}px`"
+          style="width: 140px"
+        />
       </n-space>
       <n-space>
         <n-button
