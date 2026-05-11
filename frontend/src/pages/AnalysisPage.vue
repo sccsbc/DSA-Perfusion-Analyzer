@@ -113,29 +113,25 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         >
           请点击图像放置 AIF 和 ROI
         </n-tag>
-        <template v-if="analysisStore.placedPoints.length > 0">
-          <n-divider vertical />
-          <span style="font-size: 12px; color: var(--n-text-color-3); white-space: nowrap">
-            AIF 半径
-            <n-input-number
-              :value="analysisStore.aifRadius"
-              :min="2" :max="50" :step="1"
-              size="tiny"
-              style="width: 70px"
-              @update:value="(v: number | null) => v && analysisStore.updateRadii(v, analysisStore.roiRadius)"
-            />
-          </span>
-          <span style="font-size: 12px; color: var(--n-text-color-3); white-space: nowrap">
-            ROI 半径
-            <n-input-number
-              :value="analysisStore.roiRadius"
-              :min="2" :max="50" :step="1"
-              size="tiny"
-              style="width: 70px"
-              @update:value="(v: number | null) => v && analysisStore.updateRadii(analysisStore.aifRadius, v)"
-            />
-          </span>
-        </template>
+        <n-divider vertical />
+        <span style="font-size: 12px; color: var(--n-text-color-3); white-space: nowrap">
+          AIF
+          <n-input-number
+            v-model:value="analysisStore.aifRadius"
+            :min="2" :max="50" :step="1"
+            size="tiny"
+            style="width: 65px"
+          />
+        </span>
+        <span style="font-size: 12px; color: var(--n-text-color-3); white-space: nowrap">
+          ROI
+          <n-input-number
+            v-model:value="analysisStore.roiRadius"
+            :min="2" :max="50" :step="1"
+            size="tiny"
+            style="width: 65px"
+          />
+        </span>
       </n-space>
       <n-space>
         <n-button

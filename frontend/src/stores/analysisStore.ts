@@ -70,19 +70,6 @@ export const useAnalysisStore = defineStore('analysis', {
       this.error = null
     },
 
-    /** 实时更新所有已放置点的半径 */
-    updateRadii(aifR: number, roiR: number) {
-      this.aifRadius = aifR
-      this.roiRadius = roiR
-      for (const pt of this.placedPoints) {
-        if (pt.id === 'aif') {
-          pt.radius = aifR
-        } else {
-          pt.radius = roiR
-        }
-      }
-    },
-
     setResults(results: AnalyzeResponse) {
       this.results = results
       this.error = null
