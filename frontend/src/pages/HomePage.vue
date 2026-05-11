@@ -10,15 +10,16 @@ const studyStore = useStudyStore()
 const isUploading = ref(false)
 const errorMsg = ref<string | null>(null)
 
-async function handleUpload(options: { file: File; fileList: File[] }) {
-  const file = options.file
-  if (!file) return
+async function handleUpload(options: { file: { file?: File; name?: string }; fileList: Array<{ file?: File }> }) {
+  // Naive UI UploadFileInfo: file 是原生 File 对象，在 file.file 中
+  const nativeFile = options.file?.file
+  if (!nativeFile) return
 
   isUploading.value = true
   errorMsg.value = null
 
   try {
-    const study = await uploadDicom(file)
+    const study = await uploadDicom(nativeFile)
     studyStore.setStudy(study)
     router.push(`/analysis/${study.study_id}`)
   } catch (err: unknown) {
