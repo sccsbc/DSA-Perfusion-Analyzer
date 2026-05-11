@@ -141,8 +141,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
         </span>
         <n-slider
           v-model:value="currentRadius"
-          :min="2"
-          :max="50"
+          :min="1"
+          :max="20"
           :step="0.5"
           :format-tooltip="(v: number) => `${radiusLabel} ${v.toFixed(1)}px`"
           style="width: 140px"
