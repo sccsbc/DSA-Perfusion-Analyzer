@@ -139,6 +139,57 @@ dsa/
 └── start.sh                     # 一键启动脚本
 ```
 
+## Electron 桌面打包
+
+### 开发调试
+
+```bash
+cd frontend
+npm run dev:electron    # 启动 Vite + Electron 窗口
+```
+
+### 后端打包（PyInstaller）
+
+打包前需将 Python 后端编译为独立可执行文件：
+
+```bash
+cd backend
+conda activate dsa-perfusion
+pip install pyinstaller
+
+# macOS (Apple Silicon)
+pyinstaller --onefile --name dsa-backend \
+  --add-data "src:src" \
+  --hidden-import scipy --hidden-import pydicom --hidden-import skimage \
+  --hidden-import fastapi --hidden-import uvicorn \
+  -c src/main.py
+
+# Windows (x64) — 在 Windows 机器上执行
+pyinstaller --onefile --name dsa-backend.exe ^
+  --add-data "src;src" ^
+  --hidden-import scipy --hidden-import pydicom --hidden-import skimage ^
+  --hidden-import fastapi --hidden-import uvicorn ^
+  -c src/main.py
+```
+
+生成的 `dist/dsa-backend` 复制到 `frontend/../backend/` 目录。
+
+### 打包桌面应用
+
+```bash
+cd frontend
+
+# macOS Apple Silicon (.dmg)
+npm run build:electron:mac
+
+# Windows x64 (.exe 安装包)
+npm run build:electron:win
+```
+
+打包输出在 `frontend/release/` 目录。
+
+> **注意**：跨平台打包需在目标平台上分别执行。macOS 上只能打 ARM64 dmg，Windows 上只能打 x64 安装包。
+
 ## 开发
 
 ```bash
