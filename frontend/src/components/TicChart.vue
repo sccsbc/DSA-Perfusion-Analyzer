@@ -71,7 +71,10 @@ const option = computed(() => {
 <style scoped>
 .tic-chart {
   width: 100%;
-  height: 100%;
-  min-height: 300px;
+  height: 320px;
+}
+.tic-chart > .echarts {
+  width: 100% !important;
+  height: 100% !important;
 }
 </style>
