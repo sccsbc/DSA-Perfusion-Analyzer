@@ -37,6 +37,9 @@ backend/data/results/
 frontend/node_modules/
 frontend/dist/
 
+# Claude
+.claude/
+
 # Environment
 .env
 .env.local
