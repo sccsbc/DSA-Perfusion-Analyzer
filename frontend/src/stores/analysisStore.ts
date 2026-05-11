@@ -7,6 +7,8 @@ interface AnalysisState {
   results: AnalyzeResponse | null
   isAnalyzing: boolean
   error: string | null
+  aifRadius: number
+  roiRadius: number
 }
 
 export const useAnalysisStore = defineStore('analysis', {
@@ -15,6 +17,8 @@ export const useAnalysisStore = defineStore('analysis', {
     results: null,
     isAnalyzing: false,
     error: null,
+    aifRadius: 10,
+    roiRadius: 15,
   }),
 
   getters: {
@@ -33,27 +37,18 @@ export const useAnalysisStore = defineStore('analysis', {
     nextPointConfig: (state) => {
       return POINT_CONFIGS[state.placedPoints.length] ?? null
     },
-
-    pointsSummary: (state): string => {
-      const aif = state.placedPoints.find((p: PlacedPoint) => p.id === 'aif')
-      const roiCount = state.placedPoints.filter((p: PlacedPoint) => p.id !== 'aif').length
-      const parts: string[] = []
-      if (aif) parts.push('AIF ✓')
-      else parts.push('AIF ?')
-      parts.push(`ROI ${roiCount}/3`)
-      return parts.join('  |  ')
-    },
   },
 
   actions: {
     addPoint(x: number, y: number) {
       const config = this.nextPointConfig
       if (!config) return
+      const isAif = config.id === 'aif'
       this.placedPoints.push({
         id: config.id,
         x,
         y,
-        radius: config.radius,
+        radius: isAif ? this.aifRadius : this.roiRadius,
         label: config.label,
         color: config.color,
       })
@@ -73,6 +68,19 @@ export const useAnalysisStore = defineStore('analysis', {
       this.placedPoints = []
       this.results = null
       this.error = null
+    },
+
+    /** 实时更新所有已放置点的半径 */
+    updateRadii(aifR: number, roiR: number) {
+      this.aifRadius = aifR
+      this.roiRadius = roiR
+      for (const pt of this.placedPoints) {
+        if (pt.id === 'aif') {
+          pt.radius = aifR
+        } else {
+          pt.radius = roiR
+        }
+      }
     },
 
     setResults(results: AnalyzeResponse) {
