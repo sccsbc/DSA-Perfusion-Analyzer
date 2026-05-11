@@ -151,7 +151,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
       </div>
 
       <div class="right-panel">
-        <n-tabs v-model:value="activeTab" type="segment" animated>
+        <!-- display-directive="show" 确保图表容器有尺寸，ECharts 能正确渲染 -->
+        <n-tabs v-model:value="activeTab" type="segment" animated display-directive="show">
           <n-tab-pane name="tic" tab="TIC 曲线">
             <TicChart
               :times="analysisStore.results?.times ?? studyStore.currentStudy?.times ?? []"
