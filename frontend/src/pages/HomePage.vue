@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import type { UploadCustomRequestOptions } from 'naive-ui'
 import { uploadDicom } from '@/api/dsaApi'
 import { useStudyStore } from '@/stores/studyStore'
 
@@ -10,10 +11,13 @@ const studyStore = useStudyStore()
 const isUploading = ref(false)
 const errorMsg = ref<string | null>(null)
 
-async function handleUpload(options: { file: { file?: File; name?: string }; fileList: Array<{ file?: File }> }) {
-  // Naive UI UploadFileInfo: file 是原生 File 对象，在 file.file 中
-  const nativeFile = options.file?.file
-  if (!nativeFile) return
+/** 自定义上传：不使用 action URL，直接用 API 上传 */
+async function customRequest({ file, onFinish, onError }: UploadCustomRequestOptions) {
+  const nativeFile = file.file
+  if (!nativeFile) {
+    onError()
+    return
+  }
 
   isUploading.value = true
   errorMsg.value = null
@@ -21,12 +25,14 @@ async function handleUpload(options: { file: { file?: File; name?: string }; fil
   try {
     const study = await uploadDicom(nativeFile)
     studyStore.setStudy(study)
+    onFinish()
     router.push(`/analysis/${study.study_id}`)
   } catch (err: unknown) {
     const detail = (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
       || (err as Error).message
       || '上传失败，请重试'
     errorMsg.value = detail
+    onError()
   } finally {
     isUploading.value = false
   }
@@ -54,13 +60,12 @@ function handleRetry() {
         </div>
       </template>
 
-      <!-- n-upload-dragger 必须包裹在 n-upload 内，不能独立使用 -->
+      <!-- n-upload-dragger 必须包裹在 n-upload 内；custom-request 处理文件上传 -->
       <n-upload
         accept=".dcm"
         :max="1"
         :disabled="isUploading"
-        :default-upload="false"
-        @change="handleUpload"
+        :custom-request="customRequest"
       >
         <n-upload-dragger>
           <div class="upload-content">
