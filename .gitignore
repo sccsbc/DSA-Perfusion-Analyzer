@@ -40,6 +40,10 @@ frontend/dist/
 # Claude
 .claude/
 
+# Documentation and papers (intermediate artifacts)
+*.md
+*.pdf
+
 # Environment
 .env
 .env.local
