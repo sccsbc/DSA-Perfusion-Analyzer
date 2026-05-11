@@ -20,6 +20,17 @@ const BACKEND_PORT = 18000
 let mainWindow = null
 let pythonProcess = null
 
+function killExistingBackend() {
+  const { execSync } = require('child_process')
+  try {
+    if (process.platform === 'win32') {
+      execSync(`for /f "tokens=5" %a in ('netstat -ano ^| findstr :${BACKEND_PORT}') do taskkill /F /PID %a`, { stdio: 'ignore' })
+    } else {
+      execSync(`lsof -ti:${BACKEND_PORT} | xargs kill -9 2>/dev/null; pkill -9 -f dsa-backend 2>/dev/null`, { stdio: 'ignore' })
+    }
+  } catch { /* ignore if no process found */ }
+}
+
 function getPythonPath() {
   if (app.isPackaged) {
     const ext = process.platform === 'win32' ? '.exe' : ''
@@ -102,9 +113,14 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  killExistingBackend()
   startBackend()
   try {
     await waitForBackend()
+    // 确认进程还活着（不是连到了旧进程）
+    if (pythonProcess && pythonProcess.exitCode !== null) {
+      throw new Error(`Backend exited with code ${pythonProcess.exitCode}`)
+    }
     console.log('Backend ready')
   } catch (err) {
     dialog.showErrorBox('启动失败', `后端服务无法启动: ${err.message}`)
