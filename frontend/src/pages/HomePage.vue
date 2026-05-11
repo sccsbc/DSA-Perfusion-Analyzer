@@ -11,8 +11,7 @@ const studyStore = useStudyStore()
 const isUploading = ref(false)
 const errorMsg = ref<string | null>(null)
 
-/** 自定义上传：不使用 action URL，直接用 API 上传 */
-async function customRequest({ file, onFinish, onError }: UploadCustomRequestOptions) {
+function customRequest({ file, onFinish, onError }: UploadCustomRequestOptions) {
   const nativeFile = file.file
   if (!nativeFile) {
     onError()
@@ -22,20 +21,22 @@ async function customRequest({ file, onFinish, onError }: UploadCustomRequestOpt
   isUploading.value = true
   errorMsg.value = null
 
-  try {
-    const study = await uploadDicom(nativeFile)
-    studyStore.setStudy(study)
-    onFinish()
-    router.push(`/analysis/${study.study_id}`)
-  } catch (err: unknown) {
-    const detail = (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
-      || (err as Error).message
-      || '上传失败，请重试'
-    errorMsg.value = detail
-    onError()
-  } finally {
-    isUploading.value = false
-  }
+  uploadDicom(nativeFile)
+    .then((study) => {
+      studyStore.setStudy(study)
+      onFinish()
+      router.push(`/analysis/${study.study_id}`)
+    })
+    .catch((err: unknown) => {
+      const detail = (err as { response?: { data?: { detail?: string } }; message?: string })?.response?.data?.detail
+        || (err as Error).message
+        || '上传失败，请重试'
+      errorMsg.value = detail
+      onError()
+    })
+    .finally(() => {
+      isUploading.value = false
+    })
 }
 
 function handleRetry() {
@@ -60,25 +61,25 @@ function handleRetry() {
         </div>
       </template>
 
-      <!-- n-upload-dragger 必须包裹在 n-upload 内；custom-request 处理文件上传 -->
+      <!-- 官方基础用法: n-upload + n-button 触发文件选择 -->
       <n-upload
         accept=".dcm"
         :max="1"
         :disabled="isUploading"
         :custom-request="customRequest"
       >
-        <n-upload-dragger>
-          <div class="upload-content">
-            <n-icon size="48" color="#999">
+        <n-button :loading="isUploading" size="large" block>
+          <template #icon>
+            <n-icon>
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
               </svg>
             </n-icon>
-            <p class="upload-text">点击或拖拽 DICOM 文件到此区域上传</p>
-            <p class="upload-hint">支持 .dcm 单文件多帧 DICOM</p>
-          </div>
-        </n-upload-dragger>
+          </template>
+          选择 DICOM 文件
+        </n-button>
       </n-upload>
+      <p class="upload-hint">支持 .dcm 单文件多帧 DICOM</p>
 
       <div v-if="isUploading" class="status-overlay">
         <n-spin size="medium" />
@@ -136,21 +137,11 @@ function handleRetry() {
   color: var(--n-text-color-3);
 }
 
-.upload-content {
-  padding: 32px 16px;
-  text-align: center;
-}
-
-.upload-text {
-  margin: 12px 0 4px;
-  font-size: 15px;
-  color: var(--n-text-color-2);
-}
-
 .upload-hint {
-  margin: 0;
+  margin: 12px 0 0;
   font-size: 12px;
   color: var(--n-text-color-3);
+  text-align: center;
 }
 
 .status-overlay {
