@@ -143,7 +143,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
           v-model:value="currentRadius"
           :min="1"
           :max="20"
-          :step="0.5"
+          :step="0.2"
           :format-tooltip="(v: number) => `${radiusLabel} ${v.toFixed(1)}px`"
           style="width: 140px"
         />
