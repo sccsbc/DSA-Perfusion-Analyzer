@@ -2,10 +2,10 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig({
   plugins: [vue()],
-  // Electron 生产模式用相对路径（file:// 协议），开发模式用绝对路径
-  base: mode === 'production' ? './' : '/',
+  // Electron 生产模式用 app:// 自定义协议，需要绝对路径
+  base: '/',
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -20,4 +20,4 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
-}))
+})

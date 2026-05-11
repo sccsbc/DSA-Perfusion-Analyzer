@@ -1,10 +1,10 @@
 /**
- * Electron 主进程（ESM）：启动 Python FastAPI 后端，加载前端页面。
+ * Electron 主进程：启动 Python FastAPI 后端，加载前端页面。
  *
- * npm run dev:electron    开发模式（Vite dev server + Electron）
- * npm run build:electron  生产打包（macOS arm64 / Windows x64）
+ * 开发模式：前端由 Vite dev server 提供（localhost:5173）
+ * 生产模式：用自定义 app:// 协议加载 dist/（解决 file:// 下 ES modules CORS 限制）
  */
-import { app, BrowserWindow, dialog } from 'electron'
+import { app, BrowserWindow, dialog, net, protocol } from 'electron'
 import { spawn } from 'child_process'
 import { createRequire } from 'module'
 import path from 'path'
@@ -23,7 +23,7 @@ let pythonProcess = null
 function getPythonPath() {
   if (app.isPackaged) {
     const ext = process.platform === 'win32' ? '.exe' : ''
-    const bundled = path.join(process.resourcesPath, 'backend', `dsa-backend${ext}`)
+    const bundled = path.join(process.resourcesPath, 'backend', 'dist', `dsa-backend${ext}`)
     if (fs.existsSync(bundled)) return bundled
   }
   return process.platform === 'win32' ? 'python' : 'python3'
@@ -36,7 +36,7 @@ function startBackend() {
     : path.join(__dirname, '..', '..', 'backend')
 
   const args = app.isPackaged
-    ? [] // PyInstaller 可执行文件直接运行
+    ? []
     : ['-m', 'uvicorn', 'src.main:app', '--host', '127.0.0.1', '--port', String(BACKEND_PORT)]
 
   console.log(`Starting backend: ${pythonPath} ${args.join(' ')} (cwd: ${cwd})`)
@@ -68,7 +68,17 @@ function waitForBackend(maxRetries = 30) {
   })
 }
 
-function createWindow() {
+async function createWindow() {
+  // 生产模式：注册自定义 app:// 协议来加载前端静态文件
+  if (app.isPackaged) {
+    const distPath = path.join(__dirname, '..', 'dist')
+    protocol.handle('app', (request) => {
+      const url = new URL(request.url)
+      let filePath = path.join(distPath, url.pathname === '/' ? 'index.html' : url.pathname)
+      return net.fetch(`file://${filePath}`)
+    })
+  }
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -85,7 +95,7 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173')
     mainWindow.webContents.openDevTools()
   } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
+    mainWindow.loadURL('app://localhost/index.html')
   }
 
   mainWindow.on('closed', () => { mainWindow = null })
@@ -101,7 +111,7 @@ app.whenReady().then(async () => {
     app.quit()
     return
   }
-  createWindow()
+  await createWindow()
 })
 
 app.on('window-all-closed', () => {
